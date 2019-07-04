@@ -30,6 +30,7 @@
 #include "core/gimpimage.h"
 #include "core/gimplayer.h"
 #include "core/gimplayer-floating-selection.h"
+#include "core/gimplinklayer.h"
 
 #include "text/gimptextlayer.h"
 
@@ -209,6 +210,18 @@ static const GimpActionEntry layers_actions[] =
     NC_("layers-action", "Merge all layers into one and remove transparency"),
     image_flatten_image_cmd_callback,
     GIMP_HELP_IMAGE_FLATTEN },
+
+  { "layers-link-discard", GIMP_ICON_TOOL_TEXT,
+    NC_("layers-action", "_Discard Link Information"), NULL,
+    NC_("layers-action", "Turn this link layer into a normal layer"),
+    layers_link_discard_cmd_callback,
+    GIMP_HELP_LAYER_TEXT_DISCARD },
+
+  { "layers-link-monitor", GIMP_ICON_TOOL_TEXT,
+    NC_("layers-action", "_Monitor Linked Image"), NULL,
+    NC_("layers-action", "Discard any transformation and monitor the linked file again"),
+    layers_link_monitor_cmd_callback,
+    GIMP_HELP_LAYER_TEXT_DISCARD },
 
   { "layers-text-discard", GIMP_ICON_TOOL_TEXT,
     NC_("layers-action", "_Discard Text Information"), NULL,
@@ -766,6 +779,7 @@ layers_actions_update (GimpActionGroup *group,
   gboolean       lock_alpha     = TRUE;
   gboolean       can_lock_alpha = FALSE;
   gboolean       text_layer     = FALSE;
+  gboolean       link_layer     = FALSE;
   gboolean       bs_mutable     = FALSE; /* At least 1 selected layers' blend space is mutable.     */
   gboolean       cs_mutable     = FALSE; /* At least 1 selected layers' composite space is mutable. */
   gboolean       cm_mutable     = FALSE; /* At least 1 selected layers' composite mode is mutable.  */
@@ -974,6 +988,7 @@ layers_actions_update (GimpActionGroup *group,
           gimp_action_group_set_action_active (group, action, TRUE);
 
           text_layer = gimp_item_is_text_layer (GIMP_ITEM (layer));
+          link_layer = gimp_item_is_link_layer (GIMP_ITEM (layer));
         }
     }
 
@@ -1033,6 +1048,9 @@ layers_actions_update (GimpActionGroup *group,
   SET_SENSITIVE ("layers-merge-group",       n_selected_layers && !fs && !ac && have_groups);
   SET_SENSITIVE ("layers-merge-layers",      n_selected_layers > 0 && !fs && !ac);
   SET_SENSITIVE ("layers-flatten-image",     !fs && !ac);
+
+  SET_VISIBLE   ("layers-link-discard",     link_layer && !ac);
+  SET_VISIBLE   ("layers-link-monitor",     GIMP_IS_LINK_LAYER (layer) && ! link_layer && !ac);
 
   SET_VISIBLE   ("layers-text-discard",       n_text_layers > 0 && !ac);
   SET_VISIBLE   ("layers-text-to-vectors",    n_text_layers > 0 && !ac);

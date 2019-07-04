@@ -49,6 +49,9 @@
     <menuitem action="layers-merge-group" />
     <menuitem action="layers-delete" />
     <separator />
+    <menuitem action="layers-link-discard" />
+    <menuitem action="layers-link-monitor" />
+    <separator />
     <menuitem action="layers-text-discard" />
     <menuitem action="layers-text-to-vectors" />
     <menuitem action="layers-text-along-vectors" />

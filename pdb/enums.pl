@@ -167,12 +167,13 @@ package Gimp::CodeGen::enums;
 	  header => 'libgimpbase/gimpbaseenums.h',
 	  symbols => [ qw(GIMP_FILL_FOREGROUND GIMP_FILL_BACKGROUND
 			  GIMP_FILL_WHITE GIMP_FILL_TRANSPARENT
-			  GIMP_FILL_PATTERN) ],
+			  GIMP_FILL_PATTERN GIMP_FILL_LINK) ],
 	  mapping => { GIMP_FILL_FOREGROUND => '0',
 		       GIMP_FILL_BACKGROUND => '1',
 		       GIMP_FILL_WHITE => '2',
 		       GIMP_FILL_TRANSPARENT => '3',
-		       GIMP_FILL_PATTERN => '4' }
+		       GIMP_FILL_PATTERN => '4',
+		       GIMP_FILL_LINK => '5' }
 	},
     GimpForegroundExtractMode =>
 	{ contig => 1,
