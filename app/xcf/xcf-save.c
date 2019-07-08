@@ -51,6 +51,8 @@
 #include "core/gimpitemlist.h"
 #include "core/gimplayer.h"
 #include "core/gimplayermask.h"
+#include "core/gimplink.h"
+#include "core/gimplinklayer.h"
 #include "core/gimpparasitelist.h"
 #include "core/gimpprogress.h"
 #include "core/gimpsamplepoint.h"
@@ -698,6 +700,9 @@ xcf_save_layer_props (XcfInfo    *info,
                                         image, PROP_TEXT_LAYER_FLAGS, error,
                                         flags));
     }
+
+  if (GIMP_IS_LINK_LAYER (layer))
+    xcf_check_error (xcf_save_prop (info, image, PROP_LINK_LAYER_DATA, error, layer));
 
   if (gimp_viewable_get_children (GIMP_VIEWABLE (layer)))
     {
@@ -1522,6 +1527,27 @@ xcf_save_prop (XcfInfo    *info,
         xcf_write_int32_check_error (info, &size, 1);
 
         xcf_write_int32_check_error (info, &flags, 1);
+      }
+      break;
+
+    case PROP_LINK_LAYER_DATA:
+      {
+        GimpLinkLayer *layer = va_arg (args, GimpLinkLayer *);
+        GFile         *file;
+        const gchar   *path;
+        guint32        flags;
+
+        flags = gimp_link_layer_get_xcf_flags (layer);
+        file = gimp_link_get_file (gimp_link_layer_get_link (layer));
+        path = g_file_peek_path (file);
+
+        size = 4 + strlen (path) ? strlen (path) + 5 : 4;
+
+        xcf_write_prop_type_check_error (info, prop_type);
+        xcf_write_int32_check_error (info, &size, 1);
+
+        xcf_write_int32_check_error (info, &flags, 1);
+        xcf_write_string_check_error (info, (gchar **) &path, 1);
       }
       break;
 

@@ -70,6 +70,7 @@ typedef enum
   PROP_ITEM_SET_ITEM      = 41,
   PROP_LOCK_VISIBILITY    = 42,
   PROP_SELECTED_PATH      = 43,
+  PROP_LINK_LAYER_DATA    = 44,
 } PropType;
 
 typedef enum
