@@ -63,6 +63,10 @@ struct _GimpLinkPrivate
 
   gboolean      broken;
   guint         idle_changed_source;
+
+  gboolean      is_vector;
+  gint          width;
+  gint          height;
 };
 
 static void       gimp_link_finalize       (GObject           *object);
@@ -124,6 +128,8 @@ gimp_link_init (GimpLink *link)
   link->p->file    = NULL;
   link->p->monitor = NULL;
   link->p->broken  = TRUE;
+  link->p->width   = 0;
+  link->p->height  = 0;
 
   link->p->idle_changed_source = 0;
 }
@@ -178,19 +184,48 @@ gimp_link_set_property (GObject      *object,
     case PROP_FILE:
       if (link->p->file)
         g_object_unref (link->p->file);
-      link->p->file = g_value_dup_object (value);
       if (link->p->monitor)
         g_object_unref (link->p->monitor);
+
+      link->p->is_vector = FALSE;
+      link->p->file = g_value_dup_object (value);
+
       if (link->p->file)
         {
-          gchar *basename = g_file_get_basename (link->p->file);
+          GFileInfo *info;
+          gchar     *basename;
 
+          basename = g_file_get_basename (link->p->file);
           link->p->monitor = g_file_monitor_file (link->p->file, G_FILE_MONITOR_NONE, NULL, NULL);
           g_signal_connect (link->p->monitor, "changed",
                             G_CALLBACK (gimp_link_file_changed),
                             link);
           gimp_object_set_name_safe (GIMP_OBJECT (object), basename);
           g_free (basename);
+
+          /* Check if it's a vector file. */
+          info = g_file_query_info (link->p->file,
+                                    G_FILE_ATTRIBUTE_STANDARD_CONTENT_TYPE,
+                                    G_FILE_QUERY_INFO_NONE, NULL, NULL);
+          if (info)
+            {
+              const gchar *content_type;
+
+              content_type = g_file_info_get_content_type (info);
+              if (content_type)
+                {
+                  gchar *mime_type;
+
+                  mime_type = g_content_type_get_mime_type (content_type);
+                  if (mime_type)
+                    {
+                      if (g_strcmp0 (mime_type, "image/svg+xml") == 0)
+                        link->p->is_vector = TRUE;
+                      g_free (mime_type);
+                    }
+                }
+              g_object_unref (info);
+            }
         }
       break;
 
@@ -319,9 +354,36 @@ gimp_link_duplicate (GimpLink  *link)
   return gimp_link_new (link->p->gimp, link->p->file);
 }
 
+void
+gimp_link_set_size (GimpLink       *link,
+                    gint            width,
+                    gint            height)
+{
+  link->p->width  = width;
+  link->p->height = height;
+}
+
+void
+gimp_link_get_size (GimpLink *link,
+                    gint     *width,
+                    gint     *height)
+{
+  *width  = link->p->width;
+  *height = link->p->height;
+}
+
+gboolean
+gimp_link_is_vector (GimpLink *link)
+{
+  return link->p->is_vector;
+}
+
 GeglBuffer *
 gimp_link_get_buffer (GimpLink      *link,
                       GimpProgress  *progress,
+                      /* Expected for vector only! */
+                      /*gint           width,*/
+                      /*gint           height,*/
                       GError       **error)
 {
   GeglBuffer *buffer = NULL;
@@ -330,19 +392,39 @@ gimp_link_get_buffer (GimpLink      *link,
     {
       GimpImage         *image;
       GimpPDBStatusType  status;
-      const gchar *mime_type = NULL;
+      const gchar       *mime_type = NULL;
 
-      image = file_open_image (link->p->gimp,
-                               gimp_get_user_context (link->p->gimp),
-                               progress,
-                               link->p->file,
-                               FALSE, NULL,
-                               /* XXX We might want interactive opening
-                                * for a first opening (when done through
-                                * GUI), but not for every re-render.
-                                */
-                               GIMP_RUN_NONINTERACTIVE,
-                               &status, &mime_type, error);
+      /*if (gimp_link_is_vector (link->p->file))*/
+        {
+          image = file_open_image_size (link->p->gimp,
+                                   gimp_get_user_context (link->p->gimp),
+                                   progress,
+                                   link->p->file,
+                                   link->p->width, link->p->height,
+                                   FALSE, NULL,
+                                   /* XXX We might want interactive opening
+                                    * for a first opening (when done through
+                                    * GUI), but not for every re-render.
+                                    */
+                                   GIMP_RUN_NONINTERACTIVE,
+                                   &status, &mime_type, error);
+        }
+#if 0
+      else
+        {
+          image = file_open_image (link->p->gimp,
+                                   gimp_get_user_context (link->p->gimp),
+                                   progress,
+                                   link->p->file,
+                                   FALSE, NULL,
+                                   /* XXX We might want interactive opening
+                                    * for a first opening (when done through
+                                    * GUI), but not for every re-render.
+                                    */
+                                   GIMP_RUN_NONINTERACTIVE,
+                                   &status, &mime_type, error);
+        }
+#endif
 
       if (image && status == GIMP_PDB_SUCCESS)
         {

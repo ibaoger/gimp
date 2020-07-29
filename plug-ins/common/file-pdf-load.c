@@ -841,6 +841,7 @@ load_image (PopplerDocument        *doc,
       page = poppler_document_get_page (doc, pages->pages[page_index]);
 
       poppler_page_get_size (page, &page_width, &page_height);
+      printf("Page %d size: %f %f\n", i, page_width, page_height);
       width  = page_width  * scale;
       height = page_height * scale;
 
@@ -1115,7 +1116,18 @@ load_dialog (PopplerDocument  *doc,
                                          label);
 
       if (i == 0)
-        poppler_page_get_size (page, &width, &height);
+        {
+          poppler_page_get_size (page, &width, &height);
+          printf("Page 0: %f x %f\n", width, height);
+        }
+      else
+        {
+          gdouble w;
+          gdouble h;
+
+          poppler_page_get_size (page, &w, &h);
+          printf("And Page %d: %f x %f\n", i, w, h);
+        }
 
       g_object_unref (page);
       g_free (label);

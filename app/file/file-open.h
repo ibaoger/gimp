@@ -21,6 +21,19 @@
 #define __FILE_OPEN_H__
 
 
+GimpImage *
+file_open_image_size (Gimp                *gimp,
+                      GimpContext         *context,
+                      GimpProgress        *progress,
+                      GFile               *file,
+                      gint                 request_width,
+                      gint                 request_height,
+                      gboolean             as_new,
+                      GimpPlugInProcedure *file_proc,
+                      GimpRunMode          run_mode,
+                      GimpPDBStatusType   *status,
+                      const gchar        **mime_type,
+                      GError             **error);
 GimpImage * file_open_image                 (Gimp                *gimp,
                                              GimpContext         *context,
                                              GimpProgress        *progress,

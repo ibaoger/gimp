@@ -47,6 +47,8 @@ G_BEGIN_DECLS
 typedef GimpValueArray * (* GimpRunLoadFunc) (GimpProcedure        *procedure,
                                               GimpRunMode           run_mode,
                                               GFile                *file,
+                                              /*gint                  width,*/
+                                              /*gint                  height,*/
                                               const GimpValueArray *args,
                                               gpointer              run_data);
 

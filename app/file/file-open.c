@@ -66,11 +66,324 @@ static gboolean file_open_file_proc_is_import  (GimpPlugInProcedure *file_proc);
 
 /*  public functions  */
 
+#if 0
+static gboolean
+is_vector (GFile *file)
+{
+  gboolean   is_svg = FALSE;
+  GFileInfo *info;
+
+  info = g_file_query_info (file,
+                            G_FILE_ATTRIBUTE_STANDARD_CONTENT_TYPE,
+                            G_FILE_QUERY_INFO_NONE, NULL, NULL);
+  if (info)
+    {
+      const gchar *content_type;
+
+      content_type = g_file_info_get_content_type (info);
+      if (content_type)
+        {
+          gchar *mime_type;
+
+          mime_type = g_content_type_get_mime_type (content_type);
+          if (mime_type)
+            {
+              if (g_strcmp0 (mime_type, "image/svg+xml") == 0)
+                is_svg = TRUE;
+              g_free (mime_type);
+            }
+        }
+      g_object_unref (info);
+    }
+
+  return is_svg;
+}
+
+GimpImage *
+file_open_image_size (Gimp                *gimp,
+                      GimpContext         *context,
+                      GimpProgress        *progress,
+                      GFile               *file,
+                      gint                 request_width,
+                      gint                 request_height,
+                      gboolean             as_new,
+                      GimpPlugInProcedure *file_proc,
+                      GimpRunMode          run_mode,
+                      GimpPDBStatusType   *status,
+                      const gchar        **mime_type,
+                      GError             **error)
+{
+  if (is_vector (file))
+    {
+    }
+  else
+    {
+      return file_open_image (gimp, context, progress, file,
+                              as_new, file_proc, run_mode, status, mime_type,
+                              error);
+    }
+}
+#endif
+
+GimpImage *
+file_open_image_size (Gimp                *gimp,
+                      GimpContext         *context,
+                      GimpProgress        *progress,
+                      GFile               *file,
+                      gint                 request_width,
+                      gint                 request_height,
+                      gboolean             as_new,
+                      GimpPlugInProcedure *file_proc,
+                      GimpRunMode          run_mode,
+                      GimpPDBStatusType   *status,
+                      const gchar        **mime_type,
+                      GError             **error)
+{
+  GimpValueArray *return_vals;
+  GFile          *orig_file;
+  GimpImage      *image       = NULL;
+  GFile          *local_file  = NULL;
+  gboolean        mounted     = TRUE;
+  GError         *my_error    = NULL;
+  gboolean        is_svg      = FALSE;
+
+  g_return_val_if_fail (GIMP_IS_GIMP (gimp), NULL);
+  g_return_val_if_fail (GIMP_IS_CONTEXT (context), NULL);
+  g_return_val_if_fail (progress == NULL || GIMP_IS_PROGRESS (progress), NULL);
+  g_return_val_if_fail (G_IS_FILE (file), NULL);
+  g_return_val_if_fail (status != NULL, NULL);
+  g_return_val_if_fail (error == NULL || *error == NULL, NULL);
+
+  *status = GIMP_PDB_EXECUTION_ERROR;
+
+  orig_file = file;
+
+  /* FIXME enable these tests for remote files again, needs testing */
+  if (g_file_is_native (file) &&
+      g_file_query_exists (file, NULL))
+    {
+      GFileInfo *info;
+
+      info = g_file_query_info (file,
+                                G_FILE_ATTRIBUTE_STANDARD_TYPE ","
+                                G_FILE_ATTRIBUTE_ACCESS_CAN_READ,
+                                G_FILE_QUERY_INFO_NONE,
+                                NULL, error);
+      if (! info)
+        return NULL;
+
+      if (g_file_info_get_file_type (info) != G_FILE_TYPE_REGULAR)
+        {
+          g_set_error_literal (error, G_FILE_ERROR, G_FILE_ERROR_FAILED,
+                               _("Not a regular file"));
+          g_object_unref (info);
+          return NULL;
+        }
+
+      if (! g_file_info_get_attribute_boolean (info,
+                                               G_FILE_ATTRIBUTE_ACCESS_CAN_READ))
+        {
+          g_set_error_literal (error, G_FILE_ERROR, G_FILE_ERROR_FAILED,
+                               _("Permission denied"));
+          g_object_unref (info);
+          return NULL;
+        }
+
+      g_object_unref (info);
+    }
+
+  if (! file_proc)
+    file_proc = gimp_plug_in_manager_file_procedure_find (gimp->plug_in_manager,
+                                                          GIMP_FILE_PROCEDURE_GROUP_OPEN,
+                                                          file, error);
+
+  if (! file_proc)
+    {
+      /*  don't bail out on remote files, they might need to be
+       *  downloaded for magic matching
+       */
+      if (g_file_is_native (file))
+        return NULL;
+
+      g_clear_error (error);
+    }
+
+  if (! g_file_is_native (file) &&
+      ! file_remote_mount_file (gimp, file, progress, &my_error))
+    {
+      if (my_error)
+        {
+          g_printerr ("%s: mounting remote volume failed, trying to download"
+                      "the file: %s\n",
+                      G_STRFUNC, my_error->message);
+          g_clear_error (&my_error);
+
+          mounted = FALSE;
+        }
+      else
+        {
+          *status = GIMP_PDB_CANCEL;
+
+          return NULL;
+        }
+    }
+
+  if (! file_proc || ! file_proc->handles_remote || ! mounted)
+    {
+      gchar *my_path = g_file_get_path (file);
+
+      if (! my_path)
+        {
+          local_file = file_remote_download_image (gimp, file, progress,
+                                                   &my_error);
+
+          if (! local_file)
+            {
+              if (my_error)
+                g_propagate_error (error, my_error);
+              else
+                *status = GIMP_PDB_CANCEL;
+
+              return NULL;
+            }
+
+          /*  if we don't have a file proc yet, try again on the local
+           *  file
+           */
+          if (! file_proc)
+            file_proc = gimp_plug_in_manager_file_procedure_find (gimp->plug_in_manager,
+                                                                  GIMP_FILE_PROCEDURE_GROUP_OPEN,
+                                                                  local_file, error);
+
+          if (! file_proc)
+            {
+              g_file_delete (local_file, NULL, NULL);
+              g_object_unref (local_file);
+
+              return NULL;
+            }
+
+          file = local_file;
+        }
+
+      g_free (my_path);
+    }
+
+    {
+      GSList *iter;
+
+      printf("Mime types: %s\n", file_proc->mime_types);
+        /*if (g_slist_find (file_proc->mime_types_list, "*/
+      for (iter = file_proc->mime_types_list; iter; iter = iter->next)
+        {
+          printf("\t- %s\n", (gchar *) iter->data);
+          if (g_strcmp0 (iter->data, "image/svg+xml") == 0)
+            {
+              is_svg = TRUE;
+              break;
+            }
+        }
+    }
+
+  if (progress)
+    g_object_add_weak_pointer (G_OBJECT (progress), (gpointer) &progress);
+
+  if (is_svg && request_width > 0 && request_height > 0)
+    return_vals =
+      gimp_pdb_execute_procedure_by_name (gimp->pdb,
+                                          context, progress, error,
+                                          gimp_object_get_name (file_proc),
+                                          GIMP_TYPE_RUN_MODE, run_mode,
+                                          G_TYPE_FILE,        file,
+                                          G_TYPE_DOUBLE,      300.0,
+                                          G_TYPE_INT,         request_width,
+                                          G_TYPE_INT,         request_height,
+                                          G_TYPE_NONE);
+  else
+    return_vals =
+      gimp_pdb_execute_procedure_by_name (gimp->pdb,
+                                          context, progress, error,
+                                          gimp_object_get_name (file_proc),
+                                          GIMP_TYPE_RUN_MODE, run_mode,
+                                          G_TYPE_FILE,        file,
+                                          G_TYPE_NONE);
+
+  if (progress)
+    g_object_remove_weak_pointer (G_OBJECT (progress), (gpointer) &progress);
+
+  *status = g_value_get_enum (gimp_value_array_index (return_vals, 0));
+
+  if (*status == GIMP_PDB_SUCCESS && ! file_proc->generic_file_proc)
+    image = g_value_get_object (gimp_value_array_index (return_vals, 1));
+
+  if (local_file)
+    {
+      if (image)
+        gimp_image_set_file (image, orig_file);
+
+      g_file_delete (local_file, NULL, NULL);
+      g_object_unref (local_file);
+    }
+
+  if (*status == GIMP_PDB_SUCCESS)
+    {
+      if (image)
+        {
+          /* Only set the load procedure if it hasn't already been set. */
+          if (! gimp_image_get_load_proc (image))
+            gimp_image_set_load_proc (image, file_proc);
+
+          file_proc = gimp_image_get_load_proc (image);
+
+          if (mime_type)
+            *mime_type = g_slist_nth_data (file_proc->mime_types_list, 0);
+        }
+      else if (! file_proc->generic_file_proc)
+        {
+          if (error && ! *error)
+            g_set_error (error, G_FILE_ERROR, G_FILE_ERROR_FAILED,
+                         _("%s plug-in returned SUCCESS but did not "
+                           "return an image"),
+                         gimp_procedure_get_label (GIMP_PROCEDURE (file_proc)));
+
+          *status = GIMP_PDB_EXECUTION_ERROR;
+        }
+    }
+  else if (*status != GIMP_PDB_CANCEL)
+    {
+      if (error && ! *error)
+        g_set_error (error, G_FILE_ERROR, G_FILE_ERROR_FAILED,
+                     _("%s plug-in could not open image"),
+                     gimp_procedure_get_label (GIMP_PROCEDURE (file_proc)));
+    }
+
+  gimp_value_array_unref (return_vals);
+
+  if (image)
+    {
+      gimp_image_undo_disable (image);
+
+      if (file_open_file_proc_is_import (file_proc))
+        {
+          file_import_image (image, context, orig_file,
+                             run_mode == GIMP_RUN_INTERACTIVE,
+                             progress);
+        }
+
+      /* Enables undo again */
+      file_open_sanitize_image (image, as_new);
+    }
+
+  return image;
+}
+
 GimpImage *
 file_open_image (Gimp                *gimp,
                  GimpContext         *context,
                  GimpProgress        *progress,
                  GFile               *file,
+                 /*gint                 request_width,*/
+                 /*gint                 request_height,*/
                  gboolean             as_new,
                  GimpPlugInProcedure *file_proc,
                  GimpRunMode          run_mode,
@@ -84,6 +397,7 @@ file_open_image (Gimp                *gimp,
   GFile          *local_file  = NULL;
   gboolean        mounted     = TRUE;
   GError         *my_error    = NULL;
+  gboolean        is_svg      = FALSE;
 
   g_return_val_if_fail (GIMP_IS_GIMP (gimp), NULL);
   g_return_val_if_fail (GIMP_IS_CONTEXT (context), NULL);
@@ -201,16 +515,44 @@ file_open_image (Gimp                *gimp,
       return NULL;
     }
 
+    {
+      GSList *iter;
+
+      printf("Mime types: %s\n", file_proc->mime_types);
+        /*if (g_slist_find (file_proc->mime_types_list, "*/
+      for (iter = file_proc->mime_types_list; iter; iter = iter->next)
+        {
+          printf("\t- %s\n", (gchar *) iter->data);
+          if (g_strcmp0 (iter->data, "image/svg+xml") == 0)
+            {
+              is_svg = TRUE;
+              break;
+            }
+        }
+    }
+
   if (progress)
     g_object_add_weak_pointer (G_OBJECT (progress), (gpointer) &progress);
 
-  return_vals =
-    gimp_pdb_execute_procedure_by_name (gimp->pdb,
-                                        context, progress, error,
-                                        gimp_object_get_name (file_proc),
-                                        GIMP_TYPE_RUN_MODE, run_mode,
-                                        G_TYPE_FILE,        file,
-                                        G_TYPE_NONE);
+  if (is_svg)
+    return_vals =
+      gimp_pdb_execute_procedure_by_name (gimp->pdb,
+                                          context, progress, error,
+                                          gimp_object_get_name (file_proc),
+                                          GIMP_TYPE_RUN_MODE, run_mode,
+                                          G_TYPE_FILE,        file,
+                                          G_TYPE_DOUBLE,      300.0,
+                                          G_TYPE_INT,         1000,
+                                          G_TYPE_INT,         1000,
+                                          G_TYPE_NONE);
+  else
+    return_vals =
+      gimp_pdb_execute_procedure_by_name (gimp->pdb,
+                                          context, progress, error,
+                                          gimp_object_get_name (file_proc),
+                                          GIMP_TYPE_RUN_MODE, run_mode,
+                                          G_TYPE_FILE,        file,
+                                          G_TYPE_NONE);
 
   if (progress)
     g_object_remove_weak_pointer (G_OBJECT (progress), (gpointer) &progress);

@@ -251,7 +251,9 @@ svg_load (GimpProcedure        *procedure,
     case GIMP_RUN_NONINTERACTIVE:
       load_vals.resolution = GIMP_VALUES_GET_DOUBLE (args, 0);
       load_vals.width      = GIMP_VALUES_GET_INT    (args, 1);
+      printf("WIDTH: %d\n", load_vals.width);
       load_vals.height     = GIMP_VALUES_GET_INT    (args, 2);
+      printf("H: %d\n", load_vals.height);
       load_vals.import     = GIMP_VALUES_GET_INT    (args, 3) != FALSE;
       load_vals.merge      = GIMP_VALUES_GET_INT    (args, 3) == 2;
       break;
