@@ -64,7 +64,7 @@ build-image:
     GIT_STRATEGY: none
   cache: {}
   image:
-    name: gcr.io/kaniko-project/executor:debug
+    name: gcr.io/kaniko-project/executor:f38043ff593db001abc69567b05ae67f0b06ac56-debug
     entrypoint: [""]
   script:
     - mkdir -p /kaniko/.docker
@@ -91,7 +91,7 @@ build-image-win64:
     GIT_STRATEGY: none
   cache: {}
   image:
-    name: gcr.io/kaniko-project/executor:debug
+    name: gcr.io/kaniko-project/executor:f38043ff593db001abc69567b05ae67f0b06ac56-debug
     entrypoint: [""]
   script:
     - mkdir -p /kaniko/.docker
@@ -113,7 +113,7 @@ build-image-win32:
     GIT_STRATEGY: none
   cache: {}
   image:
-    name: gcr.io/kaniko-project/executor:debug
+    name: gcr.io/kaniko-project/executor:f38043ff593db001abc69567b05ae67f0b06ac56-debug
     entrypoint: [""]
   script:
     - mkdir -p /kaniko/.docker
