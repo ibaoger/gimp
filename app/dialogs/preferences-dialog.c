@@ -2030,9 +2030,20 @@ prefs_dialog_new (Gimp       *gimp,
                       gimp);
   }
 
-  prefs_check_button_add (object, "prefer-dark-theme",
-                          _("Use dark theme variant if available"),
+#ifdef G_OS_UNIX
+  prefs_check_button_add (object, "follow-system-colorscheme",
+                          _("Follow system color scheme"),
                           GTK_BOX (vbox2));
+#endif
+
+  button = prefs_check_button_add (object, "prefer-dark-theme",
+                                   _("Use dark theme variant if available"),
+                                   GTK_BOX (vbox2));
+#ifdef G_OS_UNIX
+  g_object_bind_property (object, "follow-system-colorscheme",
+                          button, "sensitive",
+                          G_BINDING_INVERT_BOOLEAN | G_BINDING_SYNC_CREATE);
+#endif
 
   hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 6);
   gtk_box_pack_start (GTK_BOX (vbox2), hbox, FALSE, FALSE, 0);
