@@ -137,13 +137,17 @@
 #define PSD_LFX_BEVEL           "bevl"          /* Effects layer - bevel (PS5) */
 
 /* Placed Layer */
-#define PSD_LPL_PLACE_LAYER     "plLd"          /* Placed layer (?) */
+#define PSD_LPL_PLACE_LAYER     "PlLd"          /* Placed layer (?) */
 #define PSD_LPL_PLACE_LAYER_NEW "SoLd"          /* Placed layer (PS10) */
+
+/* Smart Object Layer */
+#define PSD_LPL_SMART_OBJECT_LAYER "SoLE"       /* Smart Object layer (Photoshop CC 2015) */
 
 /* Linked Layer */
 #define PSD_LLL_LINKED_LAYER    "lnkD"          /* Linked layer (?) */
 #define PSD_LLL_LINKED_LAYER_2  "lnk2"          /* Linked layer 2nd key */
 #define PSD_LLL_LINKED_LAYER_3  "lnk3"          /* Linked layer 3rd key */
+#define PSD_LLL_LINKED_LAYER_EXT "lnkE"         /* Linked layer external */
 
 /* Merged Transparency */
 #define PSD_LMT_MERGE_TRANS     "Mtrn"          /* Merged transparency save flag (?) */

@@ -1701,18 +1701,24 @@ add_layers (GimpImage     *image,
           /* Empty layer */
           if (lyr_a[lidx]->bottom - lyr_a[lidx]->top == 0
               || lyr_a[lidx]->right - lyr_a[lidx]->left == 0)
+            {
               empty = TRUE;
+              IFDBG(3) g_debug ("Layer %d is empty", lidx);
+            }
           else
               empty = FALSE;
 
           /* Empty mask */
           if (lyr_a[lidx]->layer_mask.bottom - lyr_a[lidx]->layer_mask.top == 0
               || lyr_a[lidx]->layer_mask.right - lyr_a[lidx]->layer_mask.left == 0)
+            {
               empty_mask = TRUE;
+              IFDBG(3) g_debug ("Mask for layer %d is empty", lidx);
+            }
           else
               empty_mask = FALSE;
 
-          IFDBG(3) g_debug ("Empty mask %d, size %d %d", empty_mask,
+          IFDBG(3) g_debug ("Mask (empty: %d), size %d %d", empty_mask,
                             lyr_a[lidx]->layer_mask.bottom - lyr_a[lidx]->layer_mask.top,
                             lyr_a[lidx]->layer_mask.right - lyr_a[lidx]->layer_mask.left);
 
@@ -1726,6 +1732,8 @@ add_layers (GimpImage     *image,
 
               /* Allocate channel record */
               lyr_chn[cidx] = g_malloc (sizeof (PSDchannel) );
+
+              g_printerr ("lidx: %d, cidx: %d\n", lidx, cidx);
 
               lyr_chn[cidx]->id = lyr_a[lidx]->chn_info[cidx].channel_id;
               lyr_chn[cidx]->rows = lyr_a[lidx]->bottom - lyr_a[lidx]->top;
@@ -1995,6 +2003,19 @@ add_layers (GimpImage     *image,
 
               image_type = get_gimp_image_type (img_a->base_type, TRUE);
               IFDBG(3) g_debug ("Layer type %d", image_type);
+
+
+              if (lyr_a[lidx]->text.info)
+                {
+                  GimpLayer *textlayer;
+                  // * We have a text layer! * //
+                  // For testing purposes just add an extra layer...
+                  //g_printerr ("Address of text: %" G_GOFFSET_FORMAT ", txt info: %" G_GOFFSET_FORMAT "\n", lyr_a[lidx]->text, lyr_a[lidx]->text.info);
+                  g_printerr ("Text layer text: %s\n", lyr_a[lidx]->text.info);
+                  textlayer = gimp_text_layer_new (image, lyr_a[lidx]->text.info,
+                                                   "Tahoma", 30.0, GIMP_UNIT_POINT);
+                  gimp_image_insert_layer (image, textlayer, parent_group, 0);
+                }
 
               layer = gimp_layer_new (image, lyr_a[lidx]->name,
                                       l_w, l_h, image_type,
