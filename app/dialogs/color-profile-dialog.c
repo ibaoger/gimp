@@ -63,6 +63,7 @@ typedef struct
   GtkWidget                *dialog;
   GtkWidget                *main_vbox;
   GtkWidget                *combo;
+  GtkWidget                *label;
   GtkWidget                *dest_view;
 
 } ProfileDialog;
@@ -257,6 +258,19 @@ color_profile_dialog_new (ColorProfileDialogType    dialog_type,
   private->combo = color_profile_combo_box_new (private);
   gtk_box_pack_start (GTK_BOX (vbox), private->combo, FALSE, FALSE, 0);
   gtk_widget_show (private->combo);
+
+  if (dialog_type != COLOR_PROFILE_DIALOG_SELECT_SOFTPROOF_PROFILE)
+    {
+      gchar *cmyk_warning;
+
+      cmyk_warning = g_strdup_printf ("<i>%s</i>",
+                                      _("Warning: CMYK profiles can only be "
+                                        "used as Soft-Proof profiles."));
+      private->label = gtk_label_new (NULL);
+      gtk_label_set_markup (GTK_LABEL (private->label), cmyk_warning);
+      gtk_box_pack_start (GTK_BOX (vbox), private->label, FALSE, FALSE, 0);
+      g_free (cmyk_warning);
+    }
 
   expander = gtk_expander_new_with_mnemonic (_("Profile _details"));
   gtk_box_pack_start (GTK_BOX (vbox), expander, FALSE, FALSE, 0);
@@ -489,6 +503,29 @@ color_profile_dest_changed (GtkWidget     *combo,
     {
       gimp_color_profile_view_set_profile (GIMP_COLOR_PROFILE_VIEW (private->dest_view),
                                            dest_profile);
+
+      /* Disable convert/assign option if choosing CMYK profile
+       * (Unless you're soft-proofing) */
+      if (private->dialog_type != COLOR_PROFILE_DIALOG_SELECT_SOFTPROOF_PROFILE)
+        {
+          GtkWidget *button;
+
+          button =
+            gtk_dialog_get_widget_for_response (GTK_DIALOG (private->dialog),
+                                                GTK_RESPONSE_OK);
+
+          if (gimp_color_profile_is_cmyk (dest_profile))
+            {
+              gtk_widget_set_sensitive (button, FALSE);
+              gtk_widget_set_visible (private->label, TRUE);
+            }
+          else
+            {
+              gtk_widget_set_sensitive (button, TRUE);
+              gtk_widget_set_visible (private->label, FALSE);
+            }
+        }
+
       g_object_unref (dest_profile);
     }
 }
