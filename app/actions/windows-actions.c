@@ -112,6 +112,12 @@ static const GimpActionEntry windows_actions[] =
 
   { "windows-tab-position",        NULL, NC_("windows-action",
                                              "_Tabs Position")   },
+
+  { "windows-save-positions", NULL,
+    NC_("windows-action", "Save _Window Positions"), NULL, { NULL },
+    NC_("windows-action", "Save the current session layout"),
+    windows_save_positions_cmd_callback,
+    NULL },
 };
 
 static const GimpToggleActionEntry windows_toggle_actions[] =

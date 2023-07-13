@@ -17,7 +17,7 @@
         <submenu>
           <attribute name="label" translatable="yes" context="file-action">Open _Recent</attribute>
           <section>
-            <attribute name="section-name" translatable="no">Files</attribute>
+<attribute name="section-name" translatable="no">Files</attribute>
           </section>
           <item><attribute name="action">app.dialogs-document-history</attribute></item>
         </submenu>
@@ -105,7 +105,7 @@
         <item><attribute name="action">app.vectors-stroke</attribute></item>
       </section>
       <section>
-        <attribute name="section-name" translatable="no">Preferences</attribute>
+<attribute name="section-name" translatable="no">Preferences</attribute>
         <item><attribute name="action">app.dialogs-preferences</attribute></item>
         <item><attribute name="action">app.dialogs-extensions</attribute></item>
         <item><attribute name="action">app.dialogs-input-devices</attribute></item>
@@ -754,24 +754,24 @@
               <attribute name="label" translatable="yes" context="filters-action">_Fractals</attribute>
             </submenu>
             <submenu>
-              <attribute name="label" translatable="yes" context="filters-action">N_oise</attribute>
-              <item><attribute name="action">app.filters-noise-cell</attribute></item>
-              <item><attribute name="action">app.filters-noise-perlin</attribute></item>
-              <item><attribute name="action">app.filters-plasma</attribute></item>
-              <item><attribute name="action">app.filters-noise-simplex</attribute></item>
-              <item><attribute name="action">app.filters-noise-solid</attribute></item>
-            </submenu>
-            <submenu>
-              <attribute name="label" translatable="yes" context="filters-action">_Pattern</attribute>
-              <item><attribute name="action">app.filters-bayer-matrix</attribute></item>
-              <item><attribute name="action">app.filters-checkerboard</attribute></item>
-              <item><attribute name="action">app.filters-diffraction-patterns</attribute></item>
-              <item><attribute name="action">app.filters-grid</attribute></item>
-              <item><attribute name="action">app.filters-linear-sinusoid</attribute></item>
-              <item><attribute name="action">app.filters-maze</attribute></item>
-              <item><attribute name="action">app.filters-sinus</attribute></item>
-              <item><attribute name="action">app.filters-spiral</attribute></item>
-            </submenu>
+            <attribute name="label" translatable="yes" context="filters-action">N_oise</attribute>
+            <item><attribute name="action">app.filters-noise-cell</attribute></item>
+            <item><attribute name="action">app.filters-noise-perlin</attribute></item>
+            <item><attribute name="action">app.filters-plasma</attribute></item>
+            <item><attribute name="action">app.filters-noise-simplex</attribute></item>
+            <item><attribute name="action">app.filters-noise-solid</attribute></item>
+          </submenu>
+          <submenu>
+            <attribute name="label" translatable="yes" context="filters-action">_Pattern</attribute>
+            <item><attribute name="action">app.filters-bayer-matrix</attribute></item>
+            <item><attribute name="action">app.filters-checkerboard</attribute></item>
+            <item><attribute name="action">app.filters-diffraction-patterns</attribute></item>
+            <item><attribute name="action">app.filters-grid</attribute></item>
+            <item><attribute name="action">app.filters-linear-sinusoid</attribute></item>
+            <item><attribute name="action">app.filters-maze</attribute></item>
+            <item><attribute name="action">app.filters-sinus</attribute></item>
+            <item><attribute name="action">app.filters-spiral</attribute></item>
+          </submenu>
           </section>
         </submenu>
         <submenu>
@@ -811,6 +811,7 @@
           <item><attribute name="action">app.windows-tabs-position-left</attribute></item>
           <item><attribute name="action">app.windows-tabs-position-right</attribute></item>
         </submenu>
+        <item><attribute name="action">app.windows-save-positions</attribute></item>
         <item><attribute name="action">app.windows-use-single-window-mode</attribute></item>
       </section>
     </submenu>
