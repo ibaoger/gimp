@@ -929,6 +929,39 @@ win-installer-nightly:
     - C:\msys64\usr\bin\bash -lc "bash -x ./build/windows/gitlab-ci/installer-gimp-msys2.sh > installer.log 2>&1"
   needs: ["packaging-win32-native", "packaging-win64-native", "packaging-win-aarch64-native", "gimp-meson-debian"]
 
+ms-store-nightly:
+  rules:
+    # On releases.
+    - if: '$CI_COMMIT_TAG != null'
+    # Custom builds though web GUI, API or schedules.
+    - if: '$GIMP_CI_WIN_INSTALLER != null'
+    # Merge requests with appropriate label.
+    - if: '$CI_MERGE_REQUEST_LABELS =~ /.*5. Microsoft Store.*/'
+  variables:
+    CHERE_INVOKING: "yes"
+  tags:
+    - win32-ps
+  stage: distribution
+  dependencies:
+    - packaging-win64-native
+    - packaging-win32-native
+    - packaging-win-aarch64-native
+  artifacts:
+    name: "${CI_JOB_NAME}-${CI_COMMIT_REF_SLUG}"
+    when: always
+    expire_in: 1 week
+    paths:
+    - build/windows/store/_Output
+  script:
+    - winget install -e --id Microsoft.WindowsSDK.10.0.22621
+    # Make .msixbundle
+    - C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe build\windows\gitlab-ci\store-gimp-cmd.ps1
+    # Make .msixupload (without .pdb debug symbols)
+    - cd build\windows\store\_Output\
+    - zip gimp-store_multi-arch.msixupload *.msixbundle
+    - del *.msixbundle
+  needs: ["packaging-win32-native", "packaging-win64-native", "packaging-win-aarch64-native"]
+
 sources-meson:
   rules:
     # On commits.
