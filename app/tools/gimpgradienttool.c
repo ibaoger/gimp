@@ -757,7 +757,8 @@ gimp_gradient_tool_halt (GimpGradientTool *gradient_tool)
 static void
 gimp_gradient_tool_commit (GimpGradientTool *gradient_tool)
 {
-  GimpTool *tool = GIMP_TOOL (gradient_tool);
+  GimpTool            *tool = GIMP_TOOL (gradient_tool);
+  GimpGradientOptions *options = GIMP_GRADIENT_TOOL_GET_OPTIONS (gradient_tool);
 
   if (gradient_tool->filter)
     {
@@ -769,7 +770,8 @@ gimp_gradient_tool_commit (GimpGradientTool *gradient_tool)
 
       gimp_tool_control_push_preserve (tool->control, TRUE);
 
-      gimp_drawable_filter_commit (gradient_tool->filter, FALSE,
+      gimp_drawable_filter_commit (gradient_tool->filter,
+                                   options->apply_non_destructively,
                                    GIMP_PROGRESS (tool), FALSE);
       g_clear_object (&gradient_tool->filter);
 
