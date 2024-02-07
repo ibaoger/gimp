@@ -38,6 +38,7 @@ struct _GimpLayerMaskUndo
   GimpItemUndo   parent_instance;
 
   GimpLayerMask *layer_mask;
+  gboolean       edit_mask;
 };
 
 struct _GimpLayerMaskUndoClass
