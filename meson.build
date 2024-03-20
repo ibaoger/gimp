@@ -287,6 +287,11 @@ if platform_windows and cc.get_id() == 'gcc'
   compiler_args += msvc_compat_args
 endif
 
+# Generate .pdb debug symbols (for the MS Store version)
+if platform_windows
+  compiler_args += '-gcodeview'
+  linker_args += '-Wl,--pdb='
+endif
 
 conf.set('HAVE__NL_MEASUREMENT_MEASUREMENT',
   cc.compiles('''
@@ -581,22 +586,9 @@ libunwind = ( get_option('libunwind')
 conf.set('HAVE_LIBUNWIND', libunwind.found())
 
 
-## Check for Dr. Mingw
-drmingw = no_dep
-if platform_windows
-  exchndl = cc.find_library('exchndl', required: false)
-  exchndl_fn = cc.has_function('ExcHndlSetLogFileNameW', dependencies: exchndl)
-  if exchndl.found() and exchndl_fn
-    drmingw = declare_dependency(dependencies: exchndl)
-  endif
-endif
-conf.set('HAVE_EXCHNDL', drmingw.found())
-
-
 detailed_backtraces = (
   libbacktrace.found() or
-  libunwind.found() or
-  drmingw.found()
+  libunwind.found()
 )
 
 ################################################################################
@@ -1949,7 +1941,6 @@ final_message = [
 '''  Check updates at startup:  @0@'''.format(check_update),
 '''  Language selection:        @0@'''.format(isocodes.found()),
 '''  Vector icons:              @0@'''.format(have_vector_icons),
-'''  Dr. Mingw (Win32):         @0@'''.format(drmingw.found()),
 '''  Relocatable Bundle:        @0@'''.format(relocatable_bundle),
 '''  Default ICC directory:     @0@'''.format(icc_directory),
 '''  32-bit DLL folder (Win32): @0@'''.format(get_option('win32-32bits-dll-folder')),
