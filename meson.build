@@ -1931,6 +1931,25 @@ endif
 
 gimp_exe = find_program('tools'/'in-build-gimp.sh')
 
+# Use a temporary config directory in the top build root for 2 reasons: first
+# because we don't want to pollute any existing user config folder; second
+# because the default directory may not be writable (we have the case in macOS
+# CI), but the build dir always is.
+# We start by deleting this directory before every use, ensuring we
+# always start from a fresh config.
+gimp_exe_cleanup_config_dir = custom_target('gimp_exe_rm_config_dir',
+                                            output: [ '.bogus' ],
+                                            command: [ 'rm', '-fr', '@OUTDIR@' + '/.tmp-config' ],
+                                            build_by_default: true)
+gimp_exe_config_dir = custom_target('gimp_exe_config_dir',
+                                    output: [ '.tmp-config' ],
+                                    depends: [ gimp_exe_cleanup_config_dir ],
+                                    command: [ 'mkdir', '-p', '@OUTDIR@' + '/.tmp-config' ],
+                                    build_by_default: true)
+gimp_exe_depends += [ gimp_exe_config_dir ]
+gimp_run_env.set('GIMP3_DIRECTORY', gimp_exe_config_dir.full_path())
+
+
 ################################################################################
 # Subdirs: part 2
 
