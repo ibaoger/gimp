@@ -835,10 +835,11 @@ xcf_save_effect_props (XcfInfo      *info,
                        GimpFilter   *filter,
                        GError      **error)
 {
-  GParamSpec **pspecs;
-  guint        n_pspecs;
-  GeglNode    *node;
-  gchar       *operation;
+  const gchar **names = NULL;
+  GParamSpec  **pspecs;
+  guint         n_pspecs;
+  GeglNode     *node;
+  gchar        *operation;
 
   xcf_check_error (xcf_save_prop (info, image, PROP_VISIBLE, error,
                                   gimp_filter_get_active (filter)), ;);
@@ -864,7 +865,7 @@ xcf_save_effect_props (XcfInfo      *info,
                  "operation", &operation,
                  NULL);
 
-  pspecs = gegl_operation_list_properties (operation, &n_pspecs);
+  pspecs = gegl_node_list_properties (node, &names, &n_pspecs);
 
   for (gint i = 0; i < n_pspecs; i++)
     {
@@ -873,8 +874,7 @@ xcf_save_effect_props (XcfInfo      *info,
       FilterPropType  filter_type = FILTER_PROP_UNKNOWN;
 
       g_value_init (&value, pspec->value_type);
-      gegl_node_get_property (node, pspec->name,
-                              &value);
+      gegl_node_get_property (node, names[i], &value);
 
       switch (G_VALUE_TYPE (&value))
         {
@@ -918,7 +918,7 @@ xcf_save_effect_props (XcfInfo      *info,
                               GIMP_MESSAGE_WARNING,
                               "XCF Warning: argument \"%s\" of filter %s has "
                               "unsupported type %s. It was discarded.",
-                              pspec->name, operation,
+                              names[i], operation,
                               g_type_name (G_VALUE_TYPE (&value)));
               }
             break;
@@ -926,12 +926,13 @@ xcf_save_effect_props (XcfInfo      *info,
 
       if (filter_type != FILTER_PROP_UNKNOWN)
         xcf_check_error (xcf_save_prop (info, image, PROP_FILTER_ARGUMENT, error,
-                         pspec->name, filter_type, value), ;);
+                         names[i], filter_type, value), ;);
 
       g_value_unset (&value);
     }
   g_free (operation);
   g_free (pspecs);
+  g_free (names);
 
   xcf_check_error (xcf_save_prop (info, image, PROP_END, error), ;);
 
@@ -2121,6 +2122,7 @@ xcf_save_effect (XcfInfo     *info,
   GimpDrawableFilter *filter_drawable;
   GeglNode           *node;
   gchar              *operation;
+  const gchar        *op_version;
   GimpChannel        *effect_mask;
   goffset             offset;
   GError             *tmp_error = NULL;
@@ -2148,6 +2150,10 @@ xcf_save_effect (XcfInfo     *info,
   /* Write out GEGL operation name */
   xcf_write_string_check_error (info, (gchar **) &operation, 1, ;);
   g_free (operation);
+
+  /* Write out GEGL operation version */
+  op_version = gegl_node_get_op_version (node);
+  xcf_write_string_check_error (info, (gchar **) &op_version, 1, ;);
 
   /* write out the effect properties */
   xcf_save_effect_props (info, image, filter, error);
