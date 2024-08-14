@@ -57,6 +57,8 @@ struct _LayerOptionsDialog
   GimpLayerCompositeMode    composite_mode;
   gdouble                   opacity;
   GimpFillType              fill_type;
+  GimpInsertPosition        insert_position;
+  GimpInsertGroupPosition   insert_group_position;
   gboolean                  lock_alpha;
   gboolean                  rename_text_layers;
   GimpLayerOptionsCallback  callback;
@@ -113,6 +115,8 @@ layer_options_dialog_new (GimpImage                *image,
                           GimpLayerCompositeMode    layer_composite_mode,
                           gdouble                   layer_opacity,
                           GimpFillType              layer_fill_type,
+                          GimpInsertPosition        insert_position,
+                          GimpInsertGroupPosition   insert_group_position,
                           gboolean                  layer_visible,
                           GimpColorTag              layer_color_tag,
                           gboolean                  layer_lock_content,
@@ -144,17 +148,19 @@ layer_options_dialog_new (GimpImage                *image,
 
   private = g_slice_new0 (LayerOptionsDialog);
 
-  private->layer              = layer;
-  private->mode               = layer_mode;
-  private->blend_space        = layer_blend_space;
-  private->composite_space    = layer_composite_space;
-  private->composite_mode     = layer_composite_mode;
-  private->opacity            = layer_opacity * 100.0;
-  private->fill_type          = layer_fill_type;
-  private->lock_alpha         = layer_lock_alpha;
-  private->rename_text_layers = FALSE;
-  private->callback           = callback;
-  private->user_data          = user_data;
+  private->layer                 = layer;
+  private->mode                  = layer_mode;
+  private->blend_space           = layer_blend_space;
+  private->composite_space       = layer_composite_space;
+  private->composite_mode        = layer_composite_mode;
+  private->opacity               = layer_opacity * 100.0;
+  private->fill_type             = layer_fill_type;
+  private->insert_position       = insert_position;
+  private->insert_group_position = insert_group_position;
+  private->lock_alpha            = layer_lock_alpha;
+  private->rename_text_layers    = FALSE;
+  private->callback              = callback;
+  private->user_data             = user_data;
 
   if (layer && gimp_item_is_text_layer (GIMP_ITEM (layer)))
     private->rename_text_layers = GIMP_TEXT_LAYER (layer)->auto_rename;
@@ -382,6 +388,28 @@ layer_options_dialog_new (GimpImage                *image,
                                   &private->fill_type, NULL);
     }
 
+  if (! layer)
+    {
+      /*  The insert position  */
+      combo = gimp_enum_combo_box_new (GIMP_TYPE_INSERT_POSITION);
+      gimp_grid_attach_aligned (GTK_GRID (grid), 0, row++,
+                                _("Insert position:"), 0.0, 0.5,
+                                combo, 1);
+      gimp_int_combo_box_connect (GIMP_INT_COMBO_BOX (combo),
+                                  private->insert_position,
+                                  G_CALLBACK (gimp_int_combo_box_get_active),
+                                  &private->insert_position, NULL);
+
+      combo = gimp_enum_combo_box_new (GIMP_TYPE_INSERT_GROUP_POSITION);
+      gimp_grid_attach_aligned (GTK_GRID (grid), 0, row++,
+                                _("Insert position in layer group:"), 0.0, 0.5,
+                                combo, 1);
+      gimp_int_combo_box_connect (GIMP_INT_COMBO_BOX (combo),
+                                  private->insert_group_position,
+                                  G_CALLBACK (gimp_int_combo_box_get_active),
+                                  &private->insert_group_position, NULL);
+    }
+
   if (layer)
     {
       GtkWidget     *left_vbox = item_options_dialog_get_vbox (dialog);
@@ -499,6 +527,8 @@ layer_options_dialog_callback (GtkWidget    *dialog,
                      private->composite_mode,
                      private->opacity / 100.0,
                      private->fill_type,
+                     private->insert_position,
+                     private->insert_group_position,
                      width,
                      height,
                      offset_x,
