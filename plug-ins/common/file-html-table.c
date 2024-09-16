@@ -270,15 +270,13 @@ html_export (GimpProcedure        *procedure,
 
   gegl_init (NULL, NULL);
 
-  if (run_mode != GIMP_RUN_INTERACTIVE)
-    return gimp_procedure_new_return_values (procedure,
-                                             GIMP_PDB_CALLING_ERROR,
-                                             NULL);
-
-  if (! save_dialog (image, procedure, G_OBJECT (config)))
-    return gimp_procedure_new_return_values (procedure,
-                                             GIMP_PDB_CANCEL,
-                                             NULL);
+  if (run_mode == GIMP_RUN_INTERACTIVE)
+    {
+      if (! save_dialog (image, procedure, G_OBJECT (config)))
+        return gimp_procedure_new_return_values (procedure,
+                                                 GIMP_PDB_CANCEL,
+                                                 NULL);
+    }
 
   buffer = gimp_drawable_get_buffer (drawables->data);
 
