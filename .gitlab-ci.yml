@@ -102,7 +102,6 @@ stages:
       - RUNNER: [aarch64, x86_64_v2]
   tags:
     - $RUNNER
-  image: $CI_REGISTRY_IMAGE:build-debian-${DEB_VERSION}-${RUNNER}
   variables:
     CC: "clang"
     CXX: "clang++"
@@ -110,7 +109,6 @@ stages:
     CXX_LD: lld
   before_script:
     - export GIMP_PREFIX="${CI_PROJECT_DIR}/_install-${RUNNER}"
-    - echo -e "\e[0Ksection_start:`date +%s`:environ[collapsed=true]\r\e[0KPreparing build environment"
     - gcc -print-multi-os-directory 2>/dev/null | grep ./ && export LIB_DIR=$(gcc -print-multi-os-directory | sed 's/\.\.\///g') || export LIB_DIR="lib"
     - gcc -print-multiarch 2>/dev/null | grep . && export LIB_SUBDIR=$(echo $(gcc -print-multiarch)'/')
     # Build-time vars
@@ -120,19 +118,20 @@ stages:
     - export PATH="${GIMP_PREFIX}/bin:$PATH"
     - export LD_LIBRARY_PATH="${GIMP_PREFIX}/${LIB_DIR}/${LIB_SUBDIR}${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
     - export GI_TYPELIB_PATH="${GIMP_PREFIX}/${LIB_DIR}/${LIB_SUBDIR}girepository-1.0${GI_TYPELIB_PATH:+:$GI_TYPELIB_PATH}"
-    - echo -e "\e[0Ksection_end:`date +%s`:environ\r\e[0K"
 
-image-debian:
+
+
+deps-debian:
   extends: .debian
-  stage: prepare
+  stage: dependencies
   image:
     name: gcr.io/kaniko-project/executor:debug
     entrypoint: [""]
   variables:
     GIT_STRATEGY: none
     UMFPACK: libumfpack5
-  before_script: []
   script:
+    - echo -e "\e[0Ksection_start:`date +%s`:deps_install[collapsed=true]\r\e[0KInstalled dependencies provided by Debian $DEB_VERSION"
     - export container=docker
     - mkdir -p /kaniko/.docker
     - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
@@ -205,48 +204,34 @@ image-debian:
             poppler-data
             python3
             python3-gi" >> Dockerfile
-    - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile --destination $CI_REGISTRY_IMAGE:build-debian-${DEB_VERSION}-${RUNNER} --cache=true --cache-ttl=120h
-
-deps-debian:
-  extends: .debian
-  needs: ["image-debian"]
-  stage: dependencies
-  variables:
-    GIT_STRATEGY: none
-  script:
+    # echo "RUN echo -e \"\e[0Ksection_end:`date +%s`:deps_install\r\e[0K\" >> Dockerfile
+    # echo -e "\e[0Ksection_start:`date +%s`:environ[collapsed=true]\r\e[0KPreparing build environment"
+    - echo "ENV LIB_DIR=\"$LIB_DIR\"" >> Dockerfile
+    - echo "ENV LIB_SUBDIR=x86_64-linux-gnu" >> Dockerfile
+    ## Build-time vars
+    - echo "ENV PKG_CONFIG_PATH=\"$PKG_CONFIG_PATH\"" >> Dockerfile
+    - echo "ENV XDG_DATA_DIRS=\"$XDG_DATA_DIRS\"" >> Dockerfile
+    # Runtime vars
+    - echo "ENV PATH=\"$PATH:/bin\"" >> Dockerfile
+    - echo "ENV LD_LIBRARY_PATH=\"$LD_LIBRARY_PATH\"" >> Dockerfile
+    - echo "ENV GI_TYPELIB_PATH=\"$GI_TYPELIB_PATH\"" >> Dockerfile
+    - echo -e "\e[0Ksection_end:`date +%s`:environ\r\e[0K"
     # Clone and build babl
     - echo -e "\e[0Ksection_start:`date +%s`:babl_build[collapsed=true]\r\e[0KBuilding babl"
-    - if [ "$CI_COMMIT_TAG" != "" ]; then
-        repo=https://gitlab.gnome.org/GNOME/babl.git;
-        babl_tag=$(git ls-remote --tags --exit-code --refs "$repo" |
-                   grep -oi "BABL_[0-9]*_[0-9]*_[0-9]*"            |
-                   sort --version-sort | tail -1);
-        babl_branch="--branch=$babl_tag";
-      fi
-    - git clone $babl_branch --depth=${GIT_DEPTH} https://gitlab.gnome.org/GNOME/babl.git
-    - cd babl
-    - meson setup _build-${RUNNER} -Dprefix="${GIMP_PREFIX}"
-    - cd _build-${RUNNER}
-    - ninja
-    - ninja install
-    - cd ../..
+    - echo "ENV INVALIDATE_CACHE=$(date +%s)" >> Dockerfile
+    - echo "RUN git clone --depth=${GIT_DEPTH} https://gitlab.gnome.org/GNOME/babl.git" >> Dockerfile
+    - echo "RUN meson setup $CI_PROJECT_DIR/babl/_build-${RUNNER} babl -Dprefix=\"${GIMP_PREFIX}\"" >> Dockerfile
+    - echo "RUN ninja -C $CI_PROJECT_DIR/babl/_build-${RUNNER}" >> Dockerfile
+    - echo "RUN ninja -C $CI_PROJECT_DIR/babl/_build-${RUNNER} install" >> Dockerfile
     - echo -e "\e[0Ksection_end:`date +%s`:babl_build\r\e[0K"
     # Clone and build gegl
     - echo -e "\e[0Ksection_start:`date +%s`:gegl_build[collapsed=true]\r\e[0KBuilding gegl"
-    - if [ "$CI_COMMIT_TAG" != "" ]; then
-        repo=https://gitlab.gnome.org/GNOME/gegl.git;
-        gegl_tag=$(git ls-remote --tags --exit-code --refs "$repo" |
-                   grep -oi "GEGL_[0-9]*_[0-9]*_[0-9]*"            |
-                   sort --version-sort | tail -1);
-        gegl_branch="--branch=$gegl_tag";
-      fi
-    - git clone $gegl_branch --depth=${GIT_DEPTH} https://gitlab.gnome.org/GNOME/gegl.git
-    - cd gegl
-    - meson setup _build-${RUNNER} -Dprefix="${GIMP_PREFIX}" $WORKSHOP_OPTION
-    - cd _build-${RUNNER}
-    - ninja
-    - ninja install
+    - echo "RUN git clone --depth=${GIT_DEPTH} https://gitlab.gnome.org/GNOME/gegl.git" >> Dockerfile
+    - echo "RUN meson setup $CI_PROJECT_DIR/gegl/_build-${RUNNER} gegl -Dprefix=\"${GIMP_PREFIX}\" $WORKSHOP_OPTION" >> Dockerfile
+    - echo "RUN ninja -C $CI_PROJECT_DIR/gegl/_build-${RUNNER}" >> Dockerfile
+    - echo "RUN ninja -C $CI_PROJECT_DIR/gegl/_build-${RUNNER} install" >> Dockerfile
     - echo -e "\e[0Ksection_end:`date +%s`:gegl_build\r\e[0K"
+    - /kaniko/executor --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile --destination $CI_REGISTRY_IMAGE:build-debian-${DEB_VERSION}-${RUNNER} --cache=true --cache-ttl=120h
   artifacts:
     paths:
       - _install-${RUNNER}/
@@ -260,6 +245,7 @@ gimp-debian:
   extends: .debian
   needs: ["deps-debian"]
   stage: gimp
+  image: $CI_REGISTRY_IMAGE:build-debian-${DEB_VERSION}-${RUNNER}
   variables:
     GIT_SUBMODULE_STRATEGY: recursive
   script:
@@ -312,23 +298,15 @@ gimp-debian:
       - RUNNER: x86_64_v2
   tags: []
 
-image-debian-x64:
-  extends: .debian-x64
-  stage: !reference [image-debian, stage]
-  image: !reference [image-debian, image]
-  variables: !reference [image-debian, variables]
-  before_script:
-   - !reference [image-debian, before_script]
-  script:
-    - !reference [image-debian, script]
-
 deps-debian-x64:
   extends: .debian-x64
-  needs: ["image-debian-x64"]
   stage: !reference [deps-debian, stage]
+  image: !reference [deps-debian, image]
   variables:
     GIT_STRATEGY: none
     WORKSHOP_OPTION: '-Dworkshop=true'
+  before_script:
+   - !reference [deps-debian, before_script]
   script:
     - !reference [deps-debian, script]
   artifacts: !reference [deps-debian, artifacts]
@@ -337,6 +315,7 @@ gimp-debian-x64:
   extends: .debian-x64
   needs: ["deps-debian-x64"]
   stage: !reference [gimp-debian, stage]
+  image: !reference [gimp-debian, image]
   variables: !reference [gimp-debian, variables]
   script:
     # Check building
@@ -438,28 +417,17 @@ gimp-flatpak-x64:
     DEBIAN_FRONTEND: noninteractive
     TERM: dumb
 
-image-debian-x64-cross:
-  extends: .win-cross
-  stage: !reference [image-debian, stage]
-  image: !reference [image-debian, image]
-  variables:
-    GIT_STRATEGY: none
-    UMFPACK: libumfpack6
-  before_script:
-   - !reference [image-debian, before_script]
-  script:
-    - !reference [image-debian, script]
-
 deps-win-x64-cross:
   extends: .win-cross
-  needs: ["image-debian-x64-cross"]
   stage: dependencies
   #https://gitlab.gnome.org/Infrastructure/Infrastructure/-/issues/1461
   #cache:
     #key: ${CI_JOB_NAME_SLUG}
     #paths:
       #- quasi-msys2/
-  before_script: []
+  variables:
+    GIT_STRATEGY: none
+    UMFPACK: libumfpack6
   script:
     - bash build/windows/1_build-deps-quasimsys2.sh
   artifacts:

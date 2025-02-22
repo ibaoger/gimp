@@ -684,6 +684,7 @@
                     ]
                 }
             ],
+            "subdir": "src/libilbm",
             "cleanup": [
                 "/include",
                 "/lib/pkgconfig"
@@ -710,6 +711,7 @@
                             ]
                         }
                     ],
+                    "subdir": "src/libilbm",
                     "cleanup": [
                         "/include",
                         "/lib/pkgconfig"
