@@ -402,14 +402,14 @@ gimp_align_options_gui (GimpToolOptions *tool_options)
   gtk_grid_attach (GTK_GRID (items_grid), widget, 0, 0, 1, 1);
 
   widget = gimp_prop_check_button_new (config, "align-vectors", NULL);
-  gtk_grid_attach (GTK_GRID (items_grid), widget, 0, 1, 1, 1);
+  gtk_grid_attach (GTK_GRID (items_grid), widget, 0, 3, 1, 1);
 
   options->priv->pivot_selector = gimp_pivot_selector_new (0.0, 0.0, 1.0, 1.0);
   gtk_widget_set_tooltip_text (options->priv->pivot_selector,
                                _("Set anchor point of targets"));
   gimp_pivot_selector_set_position (GIMP_PIVOT_SELECTOR (options->priv->pivot_selector),
                                     options->priv->pivot_x, options->priv->pivot_y);
-  gtk_grid_attach (GTK_GRID (items_grid), options->priv->pivot_selector, 1, 0, 1, 2);
+  gtk_grid_attach (GTK_GRID (items_grid), options->priv->pivot_selector, 0, 1, 1, 2);
   gtk_widget_show (options->priv->pivot_selector);
 
   g_signal_connect (options->priv->pivot_selector, "changed",
