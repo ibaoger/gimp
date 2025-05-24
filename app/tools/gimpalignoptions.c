@@ -378,6 +378,8 @@ gimp_align_options_gui (GimpToolOptions *tool_options)
   GtkWidget        *section_vbox;
   GtkWidget        *items_grid;
   GtkWidget        *hbox;
+  GtkWidget        *vbox2;
+  GtkWidget        *align_hbox;
   GtkWidget        *frame;
   GtkWidget        *combo;
   gchar            *text;
@@ -403,18 +405,6 @@ gimp_align_options_gui (GimpToolOptions *tool_options)
 
   widget = gimp_prop_check_button_new (config, "align-vectors", NULL);
   gtk_grid_attach (GTK_GRID (items_grid), widget, 0, 3, 1, 1);
-
-  options->priv->pivot_selector = gimp_pivot_selector_new (0.0, 0.0, 1.0, 1.0);
-  gtk_widget_set_tooltip_text (options->priv->pivot_selector,
-                               _("Set anchor point of targets"));
-  gimp_pivot_selector_set_position (GIMP_PIVOT_SELECTOR (options->priv->pivot_selector),
-                                    options->priv->pivot_x, options->priv->pivot_y);
-  gtk_grid_attach (GTK_GRID (items_grid), options->priv->pivot_selector, 0, 1, 1, 2);
-  gtk_widget_show (options->priv->pivot_selector);
-
-  g_signal_connect (options->priv->pivot_selector, "changed",
-                    G_CALLBACK (gimp_align_options_pivot_changed),
-                    options);
 
   hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 6);
   gtk_box_pack_start (GTK_BOX (section_vbox), hbox, FALSE, FALSE, 0);
@@ -472,14 +462,21 @@ gimp_align_options_gui (GimpToolOptions *tool_options)
 
   widget = gtk_label_new (NULL);
   gtk_box_pack_start (GTK_BOX (section_vbox), widget, FALSE, FALSE, 0);
-  gtk_widget_show (widget);
   options->priv->reference_label = widget;
 
   /* Align frame: buttons */
+  align_hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 6);
+  gtk_box_pack_start (GTK_BOX (section_vbox), align_hbox, FALSE, FALSE, 0);
+  gtk_widget_set_visible (align_hbox, TRUE);
+
+  vbox2 = gtk_box_new (GTK_ORIENTATION_VERTICAL, 6);
+  gtk_widget_set_valign (vbox2, GTK_ALIGN_CENTER);
+  gtk_container_add (GTK_CONTAINER (align_hbox), vbox2);
+  gtk_widget_set_visible (vbox2, TRUE);
 
   hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 6);
-  gtk_box_pack_start (GTK_BOX (section_vbox), hbox, FALSE, FALSE, 0);
-  gtk_widget_show (hbox);
+  gtk_box_pack_start (GTK_BOX (vbox2), hbox, FALSE, FALSE, 0);
+  gtk_widget_set_visible (hbox, TRUE);
 
   n = 0;
   options->priv->align_ver_button[n++] =
@@ -495,8 +492,8 @@ gimp_align_options_gui (GimpToolOptions *tool_options)
                                    _("Align anchor points of targets on right edge of reference"));
 
   hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 6);
-  gtk_box_pack_start (GTK_BOX (section_vbox), hbox, FALSE, FALSE, 0);
-  gtk_widget_show (hbox);
+  gtk_box_pack_start (GTK_BOX (vbox2), hbox, FALSE, FALSE, 0);
+  gtk_widget_set_visible (hbox, TRUE);
 
   n = 0;
   options->priv->align_hor_button[n++] =
@@ -510,6 +507,19 @@ gimp_align_options_gui (GimpToolOptions *tool_options)
   options->priv->align_hor_button[n++] =
     gimp_align_options_button_new (options, GIMP_ALIGN_BOTTOM, hbox,
                                    _("Align anchor points of targets on bottom of reference"));
+
+  /* Anchor points square */
+  options->priv->pivot_selector = gimp_pivot_selector_new (0.0, 0.0, 1.0, 1.0);
+  gtk_widget_set_tooltip_text (options->priv->pivot_selector,
+                               _("Set anchor point of targets"));
+  gimp_pivot_selector_set_position (GIMP_PIVOT_SELECTOR (options->priv->pivot_selector),
+                                    options->priv->pivot_x, options->priv->pivot_y);
+  gtk_container_add (GTK_CONTAINER (align_hbox), options->priv->pivot_selector);
+  gtk_widget_set_visible (options->priv->pivot_selector, TRUE);
+
+  g_signal_connect (options->priv->pivot_selector, "changed",
+                    G_CALLBACK (gimp_align_options_pivot_changed),
+                    options);
 
   /* Distribute frame */
   frame = gimp_frame_new (_("Distribute"));
@@ -842,6 +852,7 @@ gimp_align_options_update_area (GimpAlignOptions *options)
       gtk_widget_hide (options->priv->reference_box);
     }
   gtk_label_set_markup (GTK_LABEL (options->priv->reference_label), text);
+  gtk_widget_set_visible (options->priv->reference_label, (text) ? TRUE: FALSE);
   g_free (text);
 }
 
