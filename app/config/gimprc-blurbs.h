@@ -257,6 +257,12 @@ _("Export XMP metadata by default.")
 #define EXPORT_METADATA_IPTC_BLURB \
 _("Export IPTC metadata by default.")
 
+/* Translators: tooltip for configuration option (checkbox).
+ * It determines how file export plug-ins handle updating metadata.
+ */
+#define EXPORT_UPDATE_METADATA_BLURB \
+_("Update and add nonessential metadata.")
+
 #define GENERATE_BACKTRACE_BLURB \
 _("Try generating debug data for bug reporting when appropriate.")
 
