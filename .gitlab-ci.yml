@@ -3,8 +3,9 @@ spec:
     distribution_pipeline:
       description: 'Pipelines that creates installable GIMP'
       options:
-        - GIMP_CI_APPIMAGE #trigger the appimage making.
+        - GIMP_CI_APPIMAGE #trigger the appimage making (base & fast).
         - GIMP_CI_FLATPAK #trigger the flatpak build and publishing (base but slow)
+        - GIMP_CI_SNAP #trigger the snap build and publishing (base but slow).
         - GIMP_CI_WIN_INSTALLER #trigger all native MSYS2 builds then creates Inno Windows installer (base but slow)
         - GIMP_CI_MS_STORE #trigger arm64 and x64 native MSYS2 builds then creates a .msixbundle (base but slow)
         - none
@@ -77,7 +78,6 @@ workflow:
       - 'scheduler_failure'
   needs: []
   # Default Docker image (unless otherwise defined)
-  image: debian:${DEB_VERSION}
   variables:
     DEB_VERSION: "bookworm"
     # Common cloning procedure
@@ -418,6 +418,51 @@ gimp-flatpak-x64:
       - gimp-meson-log.tar
     expire_in: 2 days
 
+
+## Snap CI (Ubuntu) ##
+.snap:
+  extends: .default
+  rules:
+    - if: '$CI_MERGE_REQUEST_LABELS =~ /.*Package:Snap.*/'
+      interruptible: true
+    - if: '$GIMP_CI_SNAP != null || "$[[ inputs.distribution_pipeline ]]" =~ /.*GIMP_CI_SNAP.*/'
+    - <<: *CI_COMMIT
+    - <<: *CI_RELEASE
+  parallel:
+    matrix:
+      - RUNNER: [aarch64, x86_64_v2]
+  tags:
+    - $RUNNER
+  image:
+    name: $CI_REGISTRY_IMAGE:build-snap-noble-${RUNNER}
+    entrypoint: [""]
+  before_script:
+    - export GIMP_PREFIX="${CI_PROJECT_DIR}/_install-${RUNNER}"
+  timeout: 80m
+
+deps-snap:
+  extends: .snap
+  stage: dependencies
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  script:
+    - sh build/linux/snap/1_build-deps-snapcraft.sh
+  artifacts:
+    when: on_failure
+
+gimp-snap:
+  extends: .snap
+  needs: ["deps-snap"]
+  stage: build
+  variables:
+    GIT_DEPTH: 0
+  script:
+    - sh build/linux/snap/2_build-gimp-snapcraft.sh
+  artifacts:
+    paths:
+      - snapcraft*.txt
+    expire_in: 2 hours
 
 ## WINDOWS pipelines (native MSYS2) ##
 .win:
