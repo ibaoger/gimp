@@ -17,6 +17,8 @@ if [ -z "$GITLAB_CI" ]; then
   fi
 fi
 
+flatpak --supported-arches
+
 
 # Install part of the deps
 if which flatpak-builder >/dev/null 2>&1; then
@@ -42,6 +44,9 @@ if [ -z "$GITLAB_CI" ]; then
   flatpak install --user gnome-nightly org.gnome.Sdk/$(uname -m)/master org.gnome.Platform/$(uname -m)/master -y
 fi
 
+
+flatpak remote-add --user --if-not-exists --from flathub https://flathub.org/repo/flathub.flatpakrepo
+flatpak install --user flathub org.gnome.Sdk/$(uname -m)/48 org.gnome.Platform/$(uname -m)/48 -y
 
 # Prepare env (only GIMP_PREFIX is needed for flatpak)
 if [ -z "$GIMP_PREFIX" ]; then
@@ -79,7 +84,7 @@ printf "\e[0Ksection_start:`date +%s`:babl_build[collapsed=true]\r\e[0KBuilding 
 eval $FLATPAK_BUILDER --force-clean $BUILDER_ARGS --keep-build-dirs --build-only --stop-at=gegl \
                       "$GIMP_PREFIX" build/linux/flatpak/org.gimp.GIMP-nightly.json
 if [ "$GITLAB_CI" ]; then
-  tar cf babl-meson-log.tar .flatpak-builder/build/babl-1/_flatpak_build/meson-logs/meson-log.txt
+  tar cf babl-meson-log-${RUNNER:-$(uname -m)}.tar .flatpak-builder/build/babl-1/_flatpak_build/meson-logs/meson-log.txt
 fi
 printf "\e[0Ksection_end:`date +%s`:babl_build\r\e[0K\n"
 
@@ -87,9 +92,9 @@ printf "\e[0Ksection_start:`date +%s`:gegl_build[collapsed=true]\r\e[0KBuilding 
 eval $FLATPAK_BUILDER --force-clean $BUILDER_ARGS --keep-build-dirs --build-only --stop-at=gimp \
                       "$GIMP_PREFIX" build/linux/flatpak/org.gimp.GIMP-nightly.json
 if [ "$GITLAB_CI" ]; then
-  tar cf gegl-meson-log.tar .flatpak-builder/build/gegl-1/_flatpak_build/meson-logs/meson-log.txt
+  tar cf gegl-meson-log-${RUNNER:-$(uname -m)}.tar .flatpak-builder/build/gegl-1/_flatpak_build/meson-logs/meson-log.txt
   printf "\e[0Ksection_end:`date +%s`:gegl_build\r\e[0K\n"
 
   ## Save built deps for 'gimp-flatpak-x64' job
-  tar cf .flatpak-builder.tar .flatpak-builder/
+  tar cf .flatpak-builder-${RUNNER:-$(uname -m)}.tar .flatpak-builder/
 fi

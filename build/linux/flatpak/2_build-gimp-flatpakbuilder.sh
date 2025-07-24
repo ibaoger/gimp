@@ -23,9 +23,12 @@ fi
 # Install part of the deps
 eval "$(sed -n '/Install part/,/End of check/p' build/linux/flatpak/1_build-deps-flatpakbuilder.sh)"
 
+flatpak remote-add --user --if-not-exists --from flathub https://flathub.org/repo/flathub.flatpakrepo
+flatpak install --user flathub org.gnome.Sdk/$(uname -m)/48 org.gnome.Platform/$(uname -m)/48 -y
+
 if [ "$GITLAB_CI" ]; then
   # Extract deps from previous job
-  tar xf .flatpak-builder.tar
+  tar xf .flatpak-builder-${RUNNER:-$(uname -m)}.tar
 fi
 
 
@@ -44,9 +47,9 @@ fi
 
 printf "\e[0Ksection_start:`date +%s`:gimp_build[collapsed=true]\r\e[0KBuilding GIMP\n"
 eval $FLATPAK_BUILDER --force-clean $BUILDER_ARGS --keep-build-dirs --build-only --disable-download \
-                      "$GIMP_PREFIX" build/linux/flatpak/org.gimp.GIMP-nightly.json > gimp-flatpak-builder.log 2>&1 || { cat gimp-flatpak-builder.log; exit 1; }
-if [ "$GITLAB_CI" ]; then
-  tar cf gimp-meson-log.tar .flatpak-builder/build/gimp-1/_flatpak_build/meson-logs/meson-log.txt
+                        "$GIMP_PREFIX" build/linux/flatpak/org.gimp.GIMP-nightly.json > gimp-flatpak-builder.log 2>&1 || { cat gimp-flatpak-builder.log; exit 1; }
+if [ "$GITLAB_CI"  ]; then
+  tar cf gimp-meson-log-${RUNNER:-$(uname -m)}.tar .flatpak-builder/build/gimp-1/_flatpak_build/meson-logs/meson-log.txt
 fi
 printf "\e[0Ksection_end:`date +%s`:gimp_build\r\e[0K\n"
 
@@ -55,7 +58,8 @@ printf "\e[0Ksection_end:`date +%s`:gimp_build\r\e[0K\n"
 printf "\e[0Ksection_start:`date +%s`:gimp_bundle[collapsed=true]\r\e[0KCreating OSTree repo\n"
 eval $FLATPAK_BUILDER $BUILDER_ARGS --finish-only --repo=repo \
                       "$GIMP_PREFIX" build/linux/flatpak/org.gimp.GIMP-nightly.json
-if [ "$GITLAB_CI" ]; then
-  tar cf repo.tar repo/
+flatpak build-bundle repo ${APP_ID}-${ARCH}.flatpak --runtime-repo=https://nightly.gnome.org/gnome-nightly.flatpakrepo --arch=${ARCH} ${APP_ID} ${BRANCH}
+if [ "$GITLAB_CI"  ]; then
+  tar cf repo-${RUNNER:-$(uname -m)}.tar repo/
 fi
 printf "\e[0Ksection_end:`date +%s`:gimp_bundle\r\e[0K\n"
