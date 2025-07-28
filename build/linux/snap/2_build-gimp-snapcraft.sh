@@ -19,10 +19,10 @@ fi
 
 
 # Prepare env
-## Option 1: rootless environment (recommended)
+## Option 1: no container environment (recommended)
 export SNAPCRAFT_BUILD_ENVIRONMENT=host
  
-## Option 2: root/container enviroment by lxd
+## Option 2: containerized environment by lxd
 #sudo snap install lxd
 #sudo lxd init --auto
 #user=$(whoami)
@@ -30,12 +30,16 @@ export SNAPCRAFT_BUILD_ENVIRONMENT=host
 #sudo newgrp lxd
 
 
-# Build babl, gegl and GIMP and create .snap bundle
-# (Snapcraft does not support building parts like flatpak, so we need to build everything in one go)
+# Build babl, gegl and GIMP
+## (snapcraft does not allow to freely set the .yaml path, so let's just temporarely copy it)
 cp build/linux/snap/snapcraft.yaml .
-
+## (snapcraft does not allow building in parts like flatpak-builder, so we need to build everything in one go)
 if [ -z "$GITLAB_CI" ]; then
-  snapcraft --build-for=$(dpkg --print-architecture) --verbosity=verbose
+  sudo snapcraft --build-for=$(dpkg --print-architecture) --verbosity=verbose
 else
   snapcraft remote-build --launchpad-accept-public-upload --build-for=$(dpkg --print-architecture) --verbosity=verbose
 fi
+rm snapcraft.yaml
+
+# Rename .snap file to avoid confusion (the distribution of the .snap is done only in dist-snap-weekly)
+mv *.snap temp-$(echo *.snap)

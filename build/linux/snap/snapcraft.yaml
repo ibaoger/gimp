@@ -13,7 +13,7 @@ issues: https://gitlab.gnome.org/GNOME/gimp/-/issues
 source-code: https://gitlab.gnome.org/GNOME/gimp
 license: MIT
 
-version: 3.0.4
+version: 3.1.3
 grade: devel
 base: core24
 compression: lzo
@@ -34,8 +34,8 @@ apps:
     desktop: usr/share/applications/gimp.desktop
     environment:
       HOME: $SNAP_REAL_HOME
+      LD_LIBRARY_PATH: $SNAP/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/blas:$SNAP/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/lapack:$LD_LIBRARY_PATH
       GI_TYPELIB_PATH: $SNAP/gnome-platform/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/gjs/girepository-1.0:$GI_TYPELIB_PATH
-      LD_LIBRARY_PATH: $SNAP/usr/local/lib:$SNAP/usr/local/lib/libheif:$SNAP/lib:$SNAP/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR:$SNAP/gnome-platform/usr/lib:$SNAP/gnome-platform/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR:$SNAP/usr/lib:$SNAP/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR:$SNAP/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/lapack:$SNAP/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/blas
       LIBHEIF_PLUGIN_PATH: $SNAP/usr/local/lib/libheif
     slots:
       - dbus-gimp
@@ -51,14 +51,12 @@ apps:
     extensions: [gnome]
 
 layout:
-  /etc/gimp:
-    bind: $SNAP/etc/gimp
   /usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/babl-0.1:
     bind: $SNAP/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/babl-0.1
   /usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/gegl-0.4:
     bind: $SNAP/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/gegl-0.4
-  /usr/share/locale:
-    bind: $SNAP/usr/share/locale
+  /etc/gimp:
+    bind: $SNAP/etc/gimp
 
 slots:
   dbus-gimp:
@@ -89,7 +87,6 @@ parts:
       - -Dprefix=/usr
       - -Dwith-docs=false
       - -Dgi-docgen=disabled
-      - -Dpkgconfig.relocatable=true
 
   gegl:
     after:
@@ -106,14 +103,12 @@ parts:
       - -Ddocs=false
       - -Dgi-docgen=disabled
       - -Dworkshop=true
-      - -Dpkgconfig.relocatable=true
     build-packages:
       - libmaxflow-dev
       - libopenexr-dev
       - libsuitesparse-dev
     stage-packages:
-      - libgraphblas7
-      - liblapack3
+      - graphviz
       - libmaxflow0
       - libopenexr-3-1-30
       - libumfpack6
@@ -137,7 +132,6 @@ parts:
       - -Dprefix=/usr
       - -Dgi-docgen=disabled
       - -Drelocatable-bundle=yes
-      - -Dpkgconfig.relocatable=true
       - -Dcheck-update=no
       - -Denable-default-bin=enabled
       - -Dbuild-id=org.gimp.GIMP.snapcraft.stable
@@ -152,6 +146,7 @@ parts:
       - libexpat1-dev
       - libgexiv2-dev
       - libgs-dev
+      - libheif-dev
       - libjxl-dev
       - libmng-dev
       - libmypaint-dev
@@ -164,6 +159,7 @@ parts:
       - glib-networking
       - libgexiv2-2
       - libgs10
+      - libheif1
       - libmng2
       - libmypaint-1.5-1
       - libwmf-0.2-7
