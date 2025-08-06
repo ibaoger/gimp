@@ -1209,6 +1209,8 @@ gimp_filter_tool_halt (GimpFilterTool *filter_tool)
     }
 
   filter_tool->existing_filter = NULL;
+
+  tool_manager_swap_tools (tool->tool_info->gimp);
 }
 
 static void
